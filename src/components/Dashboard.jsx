@@ -5,6 +5,7 @@ const VulnerabilityScanner = () => {
   const [scanData, setScanData] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
   const [targetUrl, setTargetUrl] = useState("");
+  const backend_url = "http://localhost:8080";
 
   const handleScan = async () => {
     if (!targetUrl) {
@@ -20,7 +21,7 @@ const VulnerabilityScanner = () => {
 
     try {
       // Make the request to the backend
-      const response = await axios.post("http://localhost:8080/scan", {
+      const response = await axios.post(`${backend_url}/scan`, {
         target_url: targetUrl,
         "Content-Type": "application/json",
       });
@@ -34,7 +35,7 @@ const VulnerabilityScanner = () => {
           target: targetUrl,
           status: "Completed",
           vulnerabilities: total_vulnerabilities,
-          reportUrl: `http://localhost:8080/reports/${report}`, // URL to download the report
+          reportUrl: `${backend_url}/reports/${report}`, // URL to download the report
         };
 
         setScanData((prevData) =>
