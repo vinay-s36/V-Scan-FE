@@ -22,8 +22,7 @@ const VulnerabilityScanner = () => {
     try {
       // Make the request to the backend
       const response = await axios.post(`${backend_url}/scan`, {
-        target_url: targetUrl,
-        "Content-Type": "application/json",
+        target_url: targetUrl
       });
 
       if (response.status === 200) {
