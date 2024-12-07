@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const VulnerabilityScanner = () => {
@@ -6,6 +6,23 @@ const VulnerabilityScanner = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [targetUrl, setTargetUrl] = useState("");
   const backend_url = "http://localhost:8080";
+
+  const fetchScanData = async () => {
+    try {
+      const response = await axios.get(`${backend_url}/scans`);
+      if (response.status === 200) {
+        setScanData(response.data);
+      } else {
+        console.error("Failed to fetch scan data.");
+      }
+    } catch (error) {
+      console.error("Error fetching scan data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchScanData();
+  }, []);
 
   const handleScan = async () => {
     if (!targetUrl) {
@@ -16,34 +33,16 @@ const VulnerabilityScanner = () => {
     setIsScanning(true);
     setScanData((prevData) => [
       ...prevData,
-      { target: targetUrl, status: 'In Progress', vulnerabilities: '-', report: '-' },
+      { target_url: targetUrl, status: "In Progress"},
     ]);
 
     try {
-      // Make the request to the backend
       const response = await axios.post(`${backend_url}/scan`, {
-        target_url: targetUrl
+        target_url: targetUrl,
       });
 
       if (response.status === 200) {
-        const { report, total_vulnerabilities } = response.data;
-
-        // Update scan data with the new result
-        const newScan = {
-          id: Date.now(),
-          target: targetUrl,
-          status: "Completed",
-          vulnerabilities: total_vulnerabilities,
-          reportUrl: `${backend_url}/reports/${report}`, // URL to download the report
-        };
-
-        setScanData((prevData) =>
-          prevData.map((scan) =>
-            scan.target === targetUrl
-              ? { ...scan, ...newScan }
-              : scan
-          )
-        );
+        await fetchScanData();
         alert("Scanning completed successfully!");
       } else {
         alert("Failed to scan. Please try again.");
@@ -51,22 +50,14 @@ const VulnerabilityScanner = () => {
     } catch (error) {
       console.error("Error during scan:", error);
       alert("An error occurred while scanning the website.");
-      setScanData((prevData) =>
-        prevData.map((scan) =>
-          scan.target === targetUrl
-            ? { ...scan, status: "Failed" }
-            : scan
-        )
-      );
     } finally {
       setIsScanning(false);
-      setTargetUrl(""); // Reset input field
+      setTargetUrl("");
     }
   };
 
   return (
     <div className="p-8">
-      {/* Search bar */}
       <div className="mb-4 flex items-center gap-2">
         <input
           type="text"
@@ -86,26 +77,27 @@ const VulnerabilityScanner = () => {
         </button>
       </div>
 
-      {/* Table */}
       <table className="w-full border-collapse border">
         <thead>
           <tr className="bg-gray-100">
             <th className="border p-2">Target</th>
             <th className="border p-2">Status</th>
             <th className="border p-2">Vulnerabilities</th>
+            <th className="border p-2">Date & Time</th>
             <th className="border p-2">Report</th>
           </tr>
         </thead>
         <tbody>
           {scanData.map((scan) => (
             <tr key={scan.id}>
-              <td className="border p-2 text-center">{scan.target}</td>
+              <td className="border p-2 text-center">{scan.target_url}</td>
               <td className="border p-2 text-center">{scan.status}</td>
-              <td className="border p-2 text-center">{scan.vulnerabilities}</td>
+              <td className="border p-2 text-center">{scan.total_vulnerabilities || "-"}</td>
+              <td className="border p-2 text-center">{scan.date || "-"}</td>
               <td className="border p-2 text-center">
-                {scan.status === "Completed" ? (
+                {scan.report ? (
                   <a
-                    href={scan.reportUrl}
+                    href={`${backend_url}/reports/${scan.report}`}
                     download
                     className="text-blue-500 underline"
                   >
